@@ -1,0 +1,66 @@
+@baseUrl = http://localhost:8082
+@authorRole = AUTHOR
+@adminRole = ADMIN
+@authorId = 1
+
+### Create category
+POST {{baseUrl}}/api/categories
+X-User-Role: {{adminRole}}
+Content-Type: application/json
+
+{
+  "name": "Java",
+  "description": "Java tutorials"
+}
+
+### Create tag
+POST {{baseUrl}}/api/tags
+X-User-Role: {{adminRole}}
+Content-Type: application/json
+
+{
+  "name": "Spring Boot"
+}
+
+### Create post
+POST {{baseUrl}}/api/posts
+X-User-Role: {{authorRole}}
+X-User-Id: {{authorId}}
+Content-Type: application/json
+
+{
+  "authorId": 1,
+  "title": "How to Build a Blog",
+  "content": "<p>This is a sample blog content with enough words for read time.</p>",
+  "excerpt": "Sample excerpt",
+  "status": "DRAFT",
+  "categoryIds": [1],
+  "tagIds": [1]
+}
+
+### Publish post
+PUT {{baseUrl}}/api/posts/1/status?status=PUBLISHED
+X-User-Role: {{authorRole}}
+
+### Get published posts
+GET {{baseUrl}}/api/posts/published
+
+### Get published posts by category
+GET {{baseUrl}}/api/posts/category/1
+
+### Get published posts by tag
+GET {{baseUrl}}/api/posts/tag/1
+
+### Increment view
+POST {{baseUrl}}/api/posts/1/view?sessionKey=session-abc-1
+
+### Like post
+POST {{baseUrl}}/api/posts/1/like?like=true
+X-User-Role: READER
+
+### Get summary
+GET {{baseUrl}}/api/posts/1/summary
+
+### Admin analytics
+GET {{baseUrl}}/api/admin/analytics
+X-User-Role: {{adminRole}}

@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:8085
+@adminRole = ADMIN
+
+### Subscribe
+POST {{baseUrl}}/api/newsletter/subscribe
+Content-Type: application/json
+
+{
+  "email": "reader1@example.com",
+  "userId": 1,
+  "fullName": "Reader One",
+  "preferences": "java,spring"
+}
+
+### Confirm subscription
+GET {{baseUrl}}/api/newsletter/confirm?token=a183afbc-8deb-40ed-b4b6-36c6e278c81f
+
+### List subscribers
+GET {{baseUrl}}/api/newsletter/subscribers
+X-User-Role: {{adminRole}}
+
+### Send campaign
+POST {{baseUrl}}/api/newsletter/campaign
+X-User-Role: {{adminRole}}
+Content-Type: application/json
+
+{
+  "subject": "Weekly Digest",
+  "content": "Top posts of this week",
+  "preferenceKeyword": "java"
+}
+
+### Unsubscribe
+GET {{baseUrl}}/api/newsletter/unsubscribe?token=a183afbc-8deb-40ed-b4b6-36c6e278c81f
