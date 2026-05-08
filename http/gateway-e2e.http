@@ -1,0 +1,36 @@
+@gateway = http://localhost:8080
+@token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhdXRob3IyQGV4YW1wbGUuY29tIiwidXNlcklkIjozLCJyb2xlIjoiQVVUSE9SIiwiaWF0IjoxNzc3MDE0MDcwLCJleHAiOjE3NzcxMDA0NzB9.XOJDyQex8ndhM5Dh5gAZki3ZjknK6V3WGS-SQo2vXXQ
+
+### AUTH via gateway
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "author2",
+  "email": "author2@example.com",
+  "password": "author123",
+  "fullName": "Author Two",
+  "role": "AUTHOR"
+}
+
+### OAuth Google via gateway (browser redirect flow)
+GET {{gateway}}/oauth2/authorization/google
+
+### POST via gateway
+GET {{gateway}}/posts/published
+
+### COMMENTS via gateway
+GET {{gateway}}/comments/post/1
+
+### MEDIA via gateway
+GET {{gateway}}/media/
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhdXRob3IyQGV4YW1wbGUuY29tIiwidXNlcklkIjozLCJyb2xlIjoiQVVUSE9SIiwiaWF0IjoxNzc3MDE0MDcwLCJleHAiOjE3NzcxMDA0NzB9.XOJDyQex8ndhM5Dh5gAZki3ZjknK6V3WGS-SQo2vXXQ
+
+### NEWSLETTER via gateway
+GET {{gateway}}/newsletter/subscribers
+Authorization: Bearer {{token}}
+
+### NOTIFICATIONS via gateway
+GET {{gateway}}/notifications/recipient/1
+Authorization: Bearer {{token}}
+

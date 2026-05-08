@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:8083
+@readerRole = READER
+@authorRole = AUTHOR
+@userId = 2
+
+### Add top level comment
+POST {{baseUrl}}/api/comments
+X-User-Role: {{readerRole}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "postId": 1,
+  "authorId": 2,
+  "content": "Great post!"
+}
+
+### Reply comment
+POST {{baseUrl}}/api/comments
+X-User-Role: {{authorRole}}
+X-User-Id: 3
+Content-Type: application/json
+
+{
+  "postId": 1,
+  "authorId": 3,
+  "parentCommentId": 1,
+  "content": "Thanks!"
+}
+
+### Get post comments
+GET {{baseUrl}}/api/comments/post/1
+
+### Like comment
+POST {{baseUrl}}/api/comments/1/like?userId=3
+X-User-Role: {{readerRole}}
+
+### Update own comment
+PUT {{baseUrl}}/api/comments/1?userId=2
+X-User-Role: {{readerRole}}
+Content-Type: application/json
+
+{
+  "content": "Great post! very useful"
+}
+
+### Approve comment
+PUT {{baseUrl}}/api/comments/1/approve
+X-User-Role: {{authorRole}}
+
+### Delete own comment
+DELETE {{baseUrl}}/api/comments/1?userId=2
+X-User-Role: {{readerRole}}

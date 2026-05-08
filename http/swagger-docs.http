@@ -1,0 +1,29 @@
+### Auth Swagger
+GET http://localhost:8081/swagger-ui.html
+### Auth OpenAPI JSON
+GET http://localhost:8081/api-docs
+
+### Post Swagger
+GET http://localhost:8082/swagger-ui.html
+### Post OpenAPI JSON
+GET http://localhost:8082/api-docs
+
+### Comment Swagger
+GET http://localhost:8083/swagger-ui.html
+### Comment OpenAPI JSON
+GET http://localhost:8083/api-docs
+
+### Media Swagger
+GET http://localhost:8084/swagger-ui.html
+### Media OpenAPI JSON
+GET http://localhost:8084/api-docs
+
+### Newsletter Swagger
+GET http://localhost:8085/swagger-ui.html
+### Newsletter OpenAPI JSON
+GET http://localhost:8085/api-docs
+
+### Notification Swagger
+GET http://localhost:8086/swagger-ui.html
+### Notification OpenAPI JSON
+GET http://localhost:8086/api-docs

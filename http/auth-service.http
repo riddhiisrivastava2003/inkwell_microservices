@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:8081
+@jwt = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJSSURESElAZXhhbXBsZS5jb20iLCJ1c2VySWQiOjIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3NzAxMzIzNSwiZXhwIjoxNzc3MDk5NjM1fQ.iIasWqaWXP2Bf4aekF5ZmxsU41tGe7GJoK07dT8hsis
+
+### Register Reader
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "helloguys",
+  "email": "hello@example.com",
+  "password": "12345678",
+  "fullName": "hello guys",
+  "role": "ADMIN"
+}
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "RIDDHI@example.com",
+  "password": "12345678"
+}
+
+### Get all users
+GET {{baseUrl}}/api/auth/users
+Authorization: Bearer {{jwt}}
+
+### Change role to AUTHOR
+PUT {{baseUrl}}/api/auth/users/1/role?actorUserId=99
+Content-Type: application/json
+
+{
+  "role": "AUTHOR"
+}
+
+### Suspend user
+PUT {{baseUrl}}/api/auth/users/1/status?active=false&actorUserId=99
+
+### Search users by username
+GET {{baseUrl}}/api/auth/search?username=reader
+
+### View audit logs (admin)
+GET {{baseUrl}}/api/auth/audit-logs
+Authorization: Bearer {{jwt}}
+
+### Platform analytics (admin)
+GET {{baseUrl}}/api/auth/admin/platform-analytics
+Authorization: Bearer {{jwt}}
+
+### OAuth Google login start (browser flow)
+GET {{baseUrl}}/oauth2/authorization/google
+
+### OAuth GitHub login start (browser flow)
+GET {{baseUrl}}/oauth2/authorization/github
