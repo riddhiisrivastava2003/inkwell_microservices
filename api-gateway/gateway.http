@@ -1,0 +1,31 @@
+@gateway = http://localhost:8080
+
+### Gateway health
+GET {{gateway}}/gateway/health
+
+### Gateway routes
+GET {{gateway}}/gateway/routes
+
+### Forward auth register
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "gateway_user",
+  "email": "gateway_user@example.com",
+  "password": "pass1234",
+  "fullName": "Gateway User",
+  "role": "READER"
+}
+
+### Forward posts
+GET {{gateway}}/posts/published
+
+### Forward comments
+GET {{gateway}}/comments/post/1
+
+### Forward newsletter
+GET {{gateway}}/newsletter/subscribers
+
+### Forward notifications
+GET {{gateway}}/notifications/recipient/1
