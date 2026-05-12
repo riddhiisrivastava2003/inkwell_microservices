@@ -1,395 +1,376 @@
-# 🖊️ Inkwell Blogging — Frontend
+# 🖊️ Inkwell Blogging — Backend
 
-> A modern, feature-rich blogging platform frontend built with **React 19**, **Vite**, **React Router v7**, **Recharts**, **Framer Motion**, and **TipTap Editor**.
+> A production-ready, microservices-based blogging platform backend built with **Spring Boot**, **Spring Cloud**, **RabbitMQ**, **Redis**, and **MySQL**.
 
 ---
 
 ## 📑 Table of Contents
 
 - [Overview](#overview)
+- [Architecture](#architecture)
+- [Microservices](#microservices)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
+- [Infrastructure Setup (Docker)](#infrastructure-setup-docker)
+- [Service Run Order](#service-run-order)
 - [Environment Variables](#environment-variables)
-- [Project Structure](#project-structure)
-- [Pages & Routes](#pages--routes)
-- [User Roles & Access](#user-roles--access)
-- [Key Features](#key-features)
-- [API Integration](#api-integration)
-- [Theming (Dark / Light Mode)](#theming-dark--light-mode)
+- [API Gateway & JWT Auth](#api-gateway--jwt-auth)
+- [OAuth2 Social Login](#oauth2-social-login)
 - [Testing](#testing)
-- [Build for Production](#build-for-production)
-- [Backend Connection](#backend-connection)
+- [API Documentation (Swagger)](#api-documentation-swagger)
+- [Database Reset](#database-reset)
+- [Project Structure](#project-structure)
 
 ---
 
 ## Overview
 
-**Inkwell Frontend** is the React-based client for the Inkwell blogging platform. It connects to the backend microservices through the API Gateway at `http://localhost:8080`. The application supports three distinct user roles — **Reader**, **Author**, and **Admin** — each with dedicated dashboards and protected routes.
+**Inkwell** is a full-featured blogging platform backend. It follows a **microservices architecture** where each domain concern is handled by an independent Spring Boot service. All services register with **Eureka**, communicate via **REST** (synchronously) and **RabbitMQ** (asynchronously), and are accessed through a single **API Gateway**.
+
+---
+
+## Architecture
+
+```
+                        ┌─────────────────────────────┐
+                        │         API Gateway          │
+                        │        (Port: 8080)          │
+                        │  - JWT Validation            │
+                        │  - Route → Microservices     │
+                        └──────────────┬──────────────┘
+                                       │
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+   ┌──────────▼──────┐    ┌────────────▼────────┐   ┌──────────▼────────────┐
+   │  auth-service   │    │ post-category-tag   │   │  comment-like-service │
+   │  (Port: 8081)   │    │    (Port: 8082)     │   │     (Port: 8083)      │
+   └─────────────────┘    └─────────────────────┘   └───────────────────────┘
+   ┌─────────────────┐    ┌─────────────────────┐   ┌───────────────────────┐
+   │  media-service  │    │ newsletter-service  │   │  notification-service │
+   │  (Port: 8084)   │    │    (Port: 8085)     │   │     (Port: 8086)      │
+   └─────────────────┘    └─────────────────────┘   └───────────────────────┘
+              │                        │                        │
+              └────────────────────────▼────────────────────────┘
+                                       │
+                    ┌──────────────────▼──────────────────┐
+                    │           Eureka Server              │
+                    │           (Port: 8761)               │
+                    └──────────────────────────────────────┘
+
+   Infrastructure:  MySQL (3306) | RabbitMQ (5672) | Redis (6379) | SMTP (2525)
+```
+
+---
+
+## Microservices
+
+| Service | Port | Responsibility |
+|---|---|---|
+| `eureka-server` | `8761` | Service discovery & registry |
+| `api-gateway` | `8080` | Single entry point, JWT validation, routing |
+| `auth-service` | `8081` | Users, roles, JWT, OAuth2, password reset |
+| `post-category-tag-service` | `8082` | Posts, categories, tags, saved posts |
+| `comment-like-service` | `8083` | Comments, comment likes |
+| `media-service` | `8084` | File uploads & media metadata |
+| `newsletter-subscription-service` | `8085` | Newsletter campaigns & subscriptions |
+| `notification-service` | `8086` | In-app notifications |
 
 ---
 
 ## Tech Stack
 
-| Category | Technology |
+| Layer | Technology |
 |---|---|
-| UI Library | React 19 |
-| Build Tool | Vite 8 |
-| Routing | React Router DOM v7 |
-| Styling | Bootstrap 5.3 + React-Bootstrap + Custom CSS |
-| Animations | Framer Motion 12 |
-| Rich Text Editor | TipTap v3 |
-| Charts & Analytics | Recharts 3 |
-| HTTP Client | Axios |
-| Notifications (Toast) | React Hot Toast |
-| Date Formatting | date-fns |
-| Icons | React Icons 5 |
-| Loading Skeletons | React Loading Skeleton |
-| Content Sanitisation | DOMPurify |
-| Testing | Vitest + Testing Library |
+| Language | Java 21 |
+| Framework | Spring Boot 3.x |
+| Service Discovery | Spring Cloud Netflix Eureka |
+| API Gateway | Spring Cloud Gateway |
+| Messaging | RabbitMQ 3.13 |
+| Caching | Redis 7.2 |
+| Database | MySQL 8.4 |
+| ORM | Spring Data JPA / Hibernate |
+| Security | Spring Security + JWT |
+| Social Login | Spring OAuth2 (Google, GitHub) |
+| Mail | Spring Mail (SMTP / Gmail) |
+| API Docs | SpringDoc OpenAPI (Swagger UI) |
+| Testing | JUnit 5 + Mockito |
+| Build Tool | Maven (Maven Wrapper included) |
+| Containerisation | Docker + Docker Compose |
 
 ---
 
 ## Prerequisites
 
-- **Node.js** v18 or higher
-- **npm** v9 or higher
-- Inkwell **Backend** running at `http://localhost:8080` (API Gateway)
+Make sure the following are installed on your system:
+
+- **Java 21** or higher
+- **Maven** (or use the `mvnw` wrapper included in each service)
+- **Docker & Docker Compose** (for infrastructure)
+- **IntelliJ IDEA** (recommended) or any IDE supporting Spring Boot
 
 ---
 
-## Getting Started
+## Infrastructure Setup (Docker)
 
-### 1. Clone & Install
-
-```bash
-# Navigate to the frontend directory
-cd inkwell-frontend
-
-# Install dependencies
-npm install
-```
-
-### 2. Setup Environment
+All infrastructure dependencies (MySQL, RabbitMQ, Redis, SMTP) can be started with a single command:
 
 ```bash
-# Copy the example env file
-cp .env.example .env
+# From the inkwell-blogging/ root directory
+docker-compose up -d
 ```
 
-Edit `.env` with your values (see [Environment Variables](#environment-variables)).
+### Services started by Docker:
 
-### 3. Start Development Server
+| Container | Port | Description |
+|---|---|---|
+| `inkwell-mysql` | `3306` | MySQL 8.4 database |
+| `inkwell-rabbitmq` | `5672` / `15672` | RabbitMQ + Management UI |
+| `inkwell-redis` | `6379` | Redis cache |
+| `inkwell-smtp4dev` | `2525` / `5000` | Local fake SMTP server |
+
+> **RabbitMQ UI:** http://localhost:15672 (user: `guest`, pass: `guest`)
+>
+> **SMTP4dev UI:** http://localhost:5000 (view emails sent locally)
+
+---
+
+## Service Run Order
+
+> ⚠️ **Services must be started in this exact order.**
+
+```
+1. Start Docker infrastructure (MySQL, RabbitMQ, Redis, SMTP)
+2. Start eureka-server       → http://localhost:8761
+3. Start (in any order):
+   - auth-service            → http://localhost:8081
+   - post-category-tag-service → http://localhost:8082
+   - comment-like-service    → http://localhost:8083
+   - media-service           → http://localhost:8084
+   - newsletter-subscription-service → http://localhost:8085
+   - notification-service    → http://localhost:8086
+4. Start api-gateway         → http://localhost:8080
+```
+
+### Running a service (from its folder):
 
 ```bash
-npm run dev
-```
+# Using Maven wrapper
+./mvnw spring-boot:run
 
-The app will be available at: **http://localhost:5173**
+# Or if Maven is installed globally
+mvn spring-boot:run
+```
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in the `inkwell-frontend/` root:
+Each service reads configuration from `application.properties`. Override sensitive values using environment variables:
 
-```env
-VITE_API_BASE_URL=http://localhost:8080
+### auth-service
+
+| Variable | Default | Description |
+|---|---|---|
+| `SMTP_HOST` | `smtp.gmail.com` | Mail server host |
+| `SMTP_PORT` | `587` | Mail server port |
+| `SMTP_USERNAME` | _(empty)_ | Gmail address |
+| `SMTP_PASSWORD` | _(empty)_ | Gmail App Password |
+| `AUTH_MAIL_FROM` | = `SMTP_USERNAME` | From address in emails |
+
+### newsletter-subscription-service
+
+| Variable | Description |
+|---|---|
+| `SMTP_HOST` | Mail server host |
+| `SMTP_PORT` | Mail server port |
+| `SMTP_USERNAME` | Sender Gmail address |
+| `SMTP_PASSWORD` | Gmail App Password |
+| `NEWSLETTER_MAIL_FROM` | Newsletter sender address |
+
+> **Gmail setup tip:** Enable 2-Step Verification on your Google account → go to **App Passwords** → generate one for "Mail" → use it as `SMTP_PASSWORD`.
+
+### Admin Registration
+
+The default admin registration key is:
+
+```
+INKWELL_ADMIN_2026
 ```
 
-> The Vite dev server proxies all `/api-gw/*` requests to `http://localhost:8080`, so you don't need to set CORS headers during development.
+Set it via `auth.admin.registration-key` in `auth-service/application.properties`.
+
+---
+
+## API Gateway & JWT Auth
+
+- All protected API calls must include the `Authorization` header:
+
+```http
+Authorization: Bearer <your-jwt-token>
+```
+
+- The gateway validates JWT before forwarding requests to downstream services.
+- Public routes (login, register, public posts) are excluded from JWT validation.
+
+### Base URL (after gateway):
+
+```
+http://localhost:8080
+```
+
+---
+
+## OAuth2 Social Login
+
+OAuth2 is supported for **Google** and **GitHub** but is enabled only via a Spring profile.
+
+### Setup:
+
+1. Set the following environment variables before starting `auth-service`:
+
+```bash
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+GITHUB_CLIENT_ID=<your-github-client-id>
+GITHUB_CLIENT_SECRET=<your-github-client-secret>
+```
+
+2. Start `auth-service` with the `oauth` profile:
+
+```bash
+# IntelliJ VM option
+-Dspring.profiles.active=oauth
+
+# Or as env var
+SPRING_PROFILES_ACTIVE=oauth
+```
+
+3. On successful OAuth login, retrieve token from:
+
+```
+GET /api/auth/oauth2/success
+```
+
+---
+
+## Testing
+
+Unit tests are written using **JUnit 5** and **Mockito**. Each service has its own test suite.
+
+### Run tests for a service:
+
+```bash
+# From inside that service's directory
+./mvnw test
+```
+
+### Available test classes:
+
+| Service | Test Class |
+|---|---|
+| `auth-service` | `AuthServiceUnitTest`, `AuthServiceFollowUnitTest` |
+| `comment-like-service` | `CommentServiceUnitTest` |
+| `post-category-tag-service` | `PostServiceSavedPostUnitTest` |
+| `newsletter-subscription-service` | `NewsletterServiceUnitTest` |
+| `notification-service` | `NotificationServiceUnitTest` |
+
+### When to use JUnit vs Mockito:
+
+- **JUnit** → Verify pure business logic, assertions, expected exceptions.
+- **Mockito** → Mock repositories/external services, isolate the unit under test, verify interactions like `save()`, `delete()`.
+
+---
+
+## API Documentation (Swagger)
+
+Each service exposes a Swagger UI at:
+
+```
+http://localhost:<PORT>/swagger-ui.html
+```
+
+| Service | Swagger URL |
+|---|---|
+| auth-service | http://localhost:8081/swagger-ui.html |
+| post-category-tag-service | http://localhost:8082/swagger-ui.html |
+| comment-like-service | http://localhost:8083/swagger-ui.html |
+| media-service | http://localhost:8084/swagger-ui.html |
+| newsletter-subscription-service | http://localhost:8085/swagger-ui.html |
+| notification-service | http://localhost:8086/swagger-ui.html |
+
+Raw OpenAPI JSON:
+
+```
+http://localhost:<PORT>/api-docs
+```
+
+You can also test APIs using the pre-written `.http` files inside the `http/` folder.
+
+---
+
+## Database Reset
+
+If you encounter JPA schema mismatch errors (e.g., unknown column):
+
+```
+1. Stop all services
+2. Run: database/reset-and-init-databases.sql (in your MySQL client)
+3. Restart services — JPA will recreate the schema automatically
+```
 
 ---
 
 ## Project Structure
 
 ```
-inkwell-frontend/
-├── index.html                    # App entry HTML
-├── vite.config.js                # Vite config (proxy setup)
-├── vitest.config.js              # Test config
-├── eslint.config.js              # ESLint rules
-├── package.json
-├── public/                       # Static assets
+inkwell-blogging/
+├── docker-compose.yml                  # Infrastructure: MySQL, RabbitMQ, Redis, SMTP
+├── RUN_ORDER.md                        # Detailed service startup guide
+├── database/
+│   ├── init-databases.sql              # Initial DB + schema setup
+│   └── reset-and-init-databases.sql    # Reset & reinitialise all databases
+├── http/                               # HTTP test files for API testing
+├── eureka-server/                      # Service registry (Eureka)
+├── api-gateway/                        # API Gateway (JWT + routing)
+├── auth-service/                       # Authentication & user management
+├── post-category-tag-service/          # Posts, categories, tags
+├── comment-like-service/               # Comments & likes
+├── media-service/                      # File uploads
+├── newsletter-subscription-service/    # Newsletter & subscriptions
+└── notification-service/               # Notifications
+```
+
+Each service follows a standard Spring Boot project layout:
+
+```
+<service-name>/
+├── pom.xml
+├── mvnw / mvnw.cmd
 └── src/
-    ├── main.jsx                  # React root entry
-    ├── App.jsx                   # App shell (Router + Providers)
-    ├── router.jsx                # All route definitions
-    ├── index.css                 # Global base styles
-    ├── App.css                   # App-level styles
-    │
-    ├── assets/                   # Images, icons, static files
-    │
-    ├── styles/
-    │   └── theme.css             # CSS variables: dark/light theme tokens
-    │
-    ├── contexts/
-    │   ├── AuthContext.jsx       # Auth state (user, token, login, logout)
-    │   ├── ThemeContext.jsx      # Dark/Light mode toggle
-    │   └── NotificationContext.jsx # In-app notification state
-    │
-    ├── hooks/                    # Custom React hooks
-    │
-    ├── layouts/
-    │   ├── PublicLayout.jsx      # Layout for public pages (Navbar + Footer)
-    │   ├── DashboardLayout.jsx   # Author dashboard layout (Sidebar)
-    │   └── AdminLayout.jsx       # Admin panel layout (Sidebar)
-    │
-    ├── components/
-    │   ├── common/
-    │   │   ├── AppNavbar.jsx     # Top navigation bar
-    │   │   └── AppFooter.jsx     # Site footer
-    │   ├── dashboard/
-    │   │   └── DashboardSidebar.jsx
-    │   ├── post/
-    │   │   └── PostCard.jsx      # Reusable blog post card
-    │   ├── comments/             # Comment components
-    │   ├── editor/               # TipTap rich text editor wrapper
-    │   └── layout/               # Layout utilities
-    │
-    ├── pages/
-    │   ├── public/               # Publicly accessible pages
-    │   ├── auth/                 # Login, Register, Password Reset, OAuth
-    │   ├── author/               # Author dashboard pages
-    │   ├── admin/                # Admin panel pages
-    │   ├── reader/               # Reader dashboard pages
-    │   └── shared/               # Shared pages (404, ProtectedRoute)
-    │
-    ├── services/
-    │   ├── authService.js        # Auth API calls
-    │   ├── postService.js        # Post CRUD API calls
-    │   ├── commentService.js     # Comment & like API calls
-    │   ├── mediaService.js       # File upload API calls
-    │   ├── newsletterService.js  # Newsletter API calls
-    │   ├── notificationService.js # Notification API calls
-    │   └── api/                  # Axios instance & interceptors
-    │
-    └── utils/                    # Helper utilities
+    ├── main/
+    │   ├── java/com/inkwell/<service>/
+    │   │   ├── controller/
+    │   │   ├── service/
+    │   │   ├── repository/
+    │   │   ├── model/
+    │   │   ├── dto/
+    │   │   ├── config/
+    │   │   └── security/
+    │   └── resources/
+    │       └── application.properties
+    └── test/
+        └── java/com/inkwell/<service>/
 ```
 
 ---
 
-## Pages & Routes
+## User Roles
 
-### 🌐 Public Routes
-
-| Path | Page | Description |
-|---|---|---|
-| `/` | `HomePage` | Blog feed with all published posts |
-| `/posts/:postId` | `PostDetailPage` | Single post view (by ID) |
-| `/posts/slug/:slug` | `PostDetailPage` | Single post view (by slug) |
-| `/search` | `SearchPage` | Search posts by keyword |
-| `/category/:categoryId` | `CategoryTagPage` | Posts filtered by category |
-| `/tag/:tagId` | `CategoryTagPage` | Posts filtered by tag |
-| `/author/:authorId` | `AuthorProfilePage` | Public author profile |
-| `/about` | `AboutPage` | About the platform |
-| `/privacy` | `PrivacyPage` | Privacy policy |
-| `/newsletter/confirm` | `NewsletterConfirmPage` | Email subscription confirmation |
-| `/newsletter/unsubscribe` | `NewsletterUnsubscribePage` | Unsubscribe from newsletter |
-
-### 🔐 Auth Routes
-
-| Path | Page | Description |
-|---|---|---|
-| `/login` | `LoginPage` | Email/password login + OAuth |
-| `/register` | `RegisterPage` | New user registration |
-| `/register/admin` | `RegisterPage` (admin mode) | Admin registration with secret key |
-| `/forgot-password` | `ForgotPasswordPage` | Request password reset email |
-| `/reset-password` | `ResetPasswordPage` | Set new password via token |
-| `/auth/oauth-success` | `OAuthSuccessPage` | OAuth2 redirect handler |
-
-### 👤 Reader Routes _(Protected: READER, AUTHOR, ADMIN)_
-
-| Path | Page | Description |
-|---|---|---|
-| `/reader-dashboard` | `ReaderDashboardPage` | Reader overview |
-| `/reader/saved` | `SavedPostsPage` | Bookmarked posts |
-
-### ✍️ Author Dashboard Routes _(Protected: AUTHOR, ADMIN)_
-
-| Path | Page | Description |
-|---|---|---|
-| `/dashboard` | `AuthorDashboardPage` | Author overview & stats |
-| `/dashboard/posts` | `MyPostsPage` | Manage own posts |
-| `/dashboard/posts/new` | `CreateEditPostPage` | Create new post |
-| `/dashboard/posts/:id/edit` | `CreateEditPostPage` | Edit existing post |
-| `/dashboard/comments` | `AuthorCommentsPage` | View comments on own posts |
-| `/dashboard/media` | `MediaLibraryPage` | Manage uploaded media |
-| `/dashboard/analytics` | `AuthorAnalyticsPage` | Post performance analytics |
-
-### 🛡️ Admin Panel Routes _(Protected: ADMIN only)_
-
-| Path | Page | Description |
-|---|---|---|
-| `/admin` | `AdminDashboardPage` | Platform overview |
-| `/admin/users` | `UserManagementPage` | Manage users & roles |
-| `/admin/posts` | `PostModerationPage` | Review & moderate posts |
-| `/admin/taxonomy` | `TaxonomyManagementPage` | Manage categories & tags |
-| `/admin/comments` | `AdminCommentsPage` | Platform-wide comment management |
-| `/admin/newsletter` | `NewsletterPage` | Send newsletters & manage subscribers |
-| `/admin/media` | `AdminMediaPage` | Platform-wide media management |
-| `/admin/analytics` | `PlatformAnalyticsPage` | Platform-level analytics & charts |
-| `/admin/audit-logs` | `AuditLogsPage` | System audit trail |
-
----
-
-## User Roles & Access
-
-| Role | Can Do |
+| Role | Access |
 |---|---|
-| **Guest** | Browse public posts, search, view author profiles |
-| **READER** | + Save posts, manage profile, newsletter subscribe |
-| **AUTHOR** | + Create/edit posts, upload media, view own analytics |
-| **ADMIN** | Full platform control: users, posts, taxonomy, newsletter, audit logs |
-
-Route access is enforced by the `ProtectedRoute` component using the `AuthContext`.
-
----
-
-## Key Features
-
-### 📝 Rich Text Editor
-- TipTap v3 integration with full formatting: **bold**, *italic*, headings, lists, code blocks, blockquotes.
-- Content is sanitised with **DOMPurify** before rendering.
-
-### 📊 Analytics & Charts
-- **Recharts** used for bar charts, area charts, and pie charts.
-- Author analytics: post views, engagement over time.
-- Platform analytics (admin): user growth, post trends.
-
-### 🎨 Dark / Light Theme
-- Toggle managed via `ThemeContext`.
-- CSS custom properties (variables) in `theme.css` power all theme-aware styling.
-- Theme preference persisted via `localStorage`.
-
-### 🔔 Notifications
-- In-app notifications via `NotificationContext`.
-- Toast notifications via **React Hot Toast**.
-
-### 📧 Newsletter
-- Readers can subscribe/unsubscribe from newsletters.
-- Admin can compose and send newsletter campaigns.
-
-### 🔒 Authentication
-- JWT-based session management via `AuthContext`.
-- Google & GitHub OAuth2 social login.
-- Password reset via email token flow.
-
-### 🖼️ Media Library
-- Upload images directly to the media service.
-- Browse uploaded media in a visual library.
-
-### ⚡ Performance
-- **Loading skeletons** (`react-loading-skeleton`) for async data states.
-- **Framer Motion** for smooth page transitions and micro-animations.
-
----
-
-## API Integration
-
-All API calls are centralised in `src/services/`. Each service file uses a shared **Axios instance** from `src/services/api/` which automatically attaches the JWT token from `localStorage`.
-
-| Service File | Backend Service |
-|---|---|
-| `authService.js` | `auth-service` (port 8081) |
-| `postService.js` | `post-category-tag-service` (port 8082) |
-| `commentService.js` | `comment-like-service` (port 8083) |
-| `mediaService.js` | `media-service` (port 8084) |
-| `newsletterService.js` | `newsletter-subscription-service` (port 8085) |
-| `notificationService.js` | `notification-service` (port 8086) |
-
-All requests are routed through **API Gateway** at `http://localhost:8080` via Vite's dev proxy:
-
-```js
-// vite.config.js proxy
-'/api-gw' → 'http://localhost:8080'
-```
-
----
-
-## Theming (Dark / Light Mode)
-
-The theme system uses CSS custom properties defined in `src/styles/theme.css`.
-
-```css
-/* Example theme tokens */
---bg-primary
---bg-secondary
---text-primary
---text-secondary
---accent-color
---border-color
-```
-
-Toggle dark/light mode via the navbar toggle — preference is saved in `localStorage` and restored on page load through `ThemeContext`.
-
----
-
-## Testing
-
-Tests are written with **Vitest** and **Testing Library**.
-
-### Run all tests:
-
-```bash
-npm run test
-```
-
-### Run in watch mode:
-
-```bash
-npm run test:watch
-```
-
-### Open Vitest UI:
-
-```bash
-npm run test:ui
-```
-
-### View coverage:
-
-```bash
-npx vitest run --coverage
-```
-
-Coverage reports are saved to `coverage/`.
-
----
-
-## Build for Production
-
-```bash
-npm run build
-```
-
-Output is placed in `dist/`. Preview the production build locally:
-
-```bash
-npm run preview
-```
-
----
-
-## Backend Connection
-
-The frontend expects the Inkwell backend API Gateway running at:
-
-```
-http://localhost:8080
-```
-
-Make sure you have started all backend services before running the frontend. See the **[Backend README](../inkwell-blogging/README.md)** for full setup instructions.
-
-### Quick backend startup summary:
-
-```
-1. docker-compose up -d          (from inkwell-blogging/)
-2. Start: eureka-server
-3. Start: all microservices
-4. Start: api-gateway
-5. npm run dev                   (from inkwell-frontend/)
-```
+| `READER` | Read posts, comment, save posts, manage profile |
+| `AUTHOR` | Everything READER + create/edit/delete own posts, manage media |
+| `ADMIN` | Full platform access: user management, post moderation, analytics, newsletter |
 
 ---
 
