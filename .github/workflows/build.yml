@@ -48,4 +48,4 @@ jobs:
         working-directory: ${{ matrix.service }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-run: mvn -B clean install -DskipTests sonar:sonar -Dsonar.projectKey=riddhiisrivastava2003_${{ matrix.service }}
+        run: mvn -B clean install -DskipTests sonar:sonar -Dsonar.projectKey=riddhiisrivastava2003_${{ matrix.service }}
