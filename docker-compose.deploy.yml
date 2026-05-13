@@ -1,0 +1,245 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: inkwell-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: scriptly_auth
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: inkwell-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+
+  redis:
+    image: redis:7.2
+    container_name: inkwell-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  smtp4dev:
+    image: rnwood/smtp4dev:latest
+    container_name: inkwell-smtp4dev
+    restart: unless-stopped
+    ports:
+      - "2525:25"
+      - "5000:80"
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8761:8761"
+
+  auth-service:
+    build:
+      context: ./auth-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      POST_SERVICE_BASE_URL: http://post-category-tag-service:8082
+      COMMENT_SERVICE_BASE_URL: http://comment-like-service:8083
+      SMTP_HOST: smtp4dev
+      SMTP_PORT: 25
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      AUTH_MAIL_FROM: ${AUTH_MAIL_FROM}
+    ports:
+      - "8081:8081"
+
+  post-category-tag-service:
+    build:
+      context: ./post-category-tag-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: post-category-tag-service
+      AUTH_SERVICE_BASE_URL: http://auth-service:8081
+      COMMENT_SERVICE_BASE_URL: http://comment-like-service:8083
+      NEWSLETTER_SERVICE_BASE_URL: http://newsletter-subscription-service:8085
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8086
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8082:8082"
+
+  comment-like-service:
+    build:
+      context: ./comment-like-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: comment-like-service
+      AUTH_SERVICE_BASE_URL: http://auth-service:8081
+      POST_SERVICE_BASE_URL: http://post-category-tag-service:8082
+      NOTIFICATION_SERVICE_BASE_URL: http://notification-service:8086
+    ports:
+      - "8083:8083"
+
+  media-service:
+    build:
+      context: ./media-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: media-service
+      AUTH_SERVICE_BASE_URL: http://auth-service:8081
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL}
+      MEDIA_STORAGE_PATH: /data/uploads
+    ports:
+      - "8084:8084"
+    volumes:
+      - media_uploads:/data/uploads
+
+  newsletter-subscription-service:
+    build:
+      context: ./newsletter-subscription-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: newsletter-subscription-service
+      AUTH_SERVICE_BASE_URL: http://auth-service:8081
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+      SMTP_HOST: smtp4dev
+      SMTP_PORT: 25
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      NEWSLETTER_MAIL_FROM: ${NEWSLETTER_MAIL_FROM}
+      APP_BASE_URL: ${FRONTEND_BASE_URL}
+    ports:
+      - "8085:8085"
+
+  notification-service:
+    build:
+      context: ./notification-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+      EUREKA_INSTANCE_HOSTNAME: notification-service
+      AUTH_SERVICE_BASE_URL: http://auth-service:8081
+      SMTP_HOST: smtp4dev
+      SMTP_PORT: 25
+      SMTP_AUTH: false
+      SMTP_STARTTLS: false
+    ports:
+      - "8086:8086"
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    restart: unless-stopped
+    depends_on:
+      eureka-server:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      post-category-tag-service:
+        condition: service_started
+      comment-like-service:
+        condition: service_started
+      media-service:
+        condition: service_started
+      newsletter-subscription-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    environment:
+      EUREKA_DEFAULT_ZONE: http://eureka-server:8761/eureka
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:
+  media_uploads:
