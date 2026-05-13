@@ -4,6 +4,7 @@ import com.inkwell.auth_service.dto.*;
 import com.inkwell.auth_service.audit.AuditLog;
 import com.inkwell.auth_service.audit.AuditLogService;
 import com.inkwell.auth_service.exception.BadRequestException;
+import com.inkwell.auth_service.model.AuthProvider;
 import com.inkwell.auth_service.model.User;
 import com.inkwell.auth_service.model.UserRole;
 import com.inkwell.auth_service.repository.UserRepository;
@@ -215,8 +216,42 @@ public class AuthController {
         if (authentication == null || !(authentication.getPrincipal() instanceof OAuth2User oauth2User)) {
             throw new BadRequestException("OAuth2 login session not found");
         }
-        String email = String.valueOf(oauth2User.getAttributes().getOrDefault("email", ""));
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new BadRequestException("User not found"));
+        Map<String, Object> attributes = oauth2User.getAttributes();
+        User user = null;
+
+        Object userIdAttr = attributes.get("userId");
+        if (userIdAttr != null) {
+            try {
+                Long userId = Long.parseLong(String.valueOf(userIdAttr));
+                user = userRepository.findById(userId).orElse(null);
+            } catch (NumberFormatException _ignored) {
+                // Ignore parse error and continue fallbacks.
+            }
+        }
+
+        if (user == null) {
+            String email = String.valueOf(attributes.getOrDefault("email", ""));
+            if (!email.isBlank()) {
+                user = userRepository.findByEmail(email).orElse(null);
+            }
+        }
+
+        if (user == null) {
+            String providerRaw = String.valueOf(attributes.getOrDefault("provider", ""));
+            String providerUserId = String.valueOf(attributes.getOrDefault("providerUserId", ""));
+            if (!providerRaw.isBlank() && !providerUserId.isBlank()) {
+                try {
+                    AuthProvider provider = AuthProvider.valueOf(providerRaw.toUpperCase());
+                    user = userRepository.findByProviderAndProviderUserId(provider, providerUserId).orElse(null);
+                } catch (IllegalArgumentException _ignored) {
+                    // Ignore invalid provider from OAuth attributes.
+                }
+            }
+        }
+
+        if (user == null) {
+            throw new BadRequestException("User not found");
+        }
         String token = authService.generateTokenForUser(user);
         return ResponseEntity.ok(AuthResponse.builder()
                 .token(token)

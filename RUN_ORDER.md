@@ -2,17 +2,20 @@
 
 1. Ensure local dependencies are running (without Docker):
    - MySQL on `localhost:3306`
-   - RabbitMQ on `localhost:5672` (optional UI `http://localhost:15672`)
-   - Redis on `localhost:6379` (if used by any service)
-   - SMTP server:
-     - For local testing: smtp4dev on `localhost:2525` (UI `http://localhost:5000`)
-     - For real Gmail inbox delivery, set:
-       - `SMTP_HOST=smtp.gmail.com`
-       - `SMTP_PORT=587`
-       - `SMTP_USERNAME=<your-gmail-id>`
-       - `SMTP_PASSWORD=<gmail-app-password>`
-       - `NEWSLETTER_MAIL_FROM=<same-gmail-id>`
-     - Gmail account must have 2-Step Verification enabled, then create an App Password.
+   - RabbitMQ on `localhost:5672` (optional UI `http://localhost:15672`) 
+- cd "C:\Program Files\RabbitMQ Server\rabbitmq_server-4.3.0\sbin"
+  .\rabbitmq-service.bat start
+  - Redis on `localhost:6379` (if used by any service)
+  - redis-cli
+  - SMTP server: Rnwood.Smtp4dev.Desktop
+    - For local testing: smtp4dev on `localhost:2525` (UI `http://localhost:5000`)
+    - For real Gmail inbox delivery, set:
+      - `SMTP_HOST=smtp.gmail.com`
+      - `SMTP_PORT=587`
+      - `SMTP_USERNAME=<your-gmail-id>`
+      - `SMTP_PASSWORD=<gmail-app-password>`
+      - `NEWSLETTER_MAIL_FROM=<same-gmail-id>`
+    - Gmail account must have 2-Step Verification enabled, then create an App Password.
 2. Start `eureka-server` (port `8761`).
 3. Start services in any order:
    - `auth-service` (`8081`)

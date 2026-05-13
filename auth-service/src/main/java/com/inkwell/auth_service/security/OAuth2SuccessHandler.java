@@ -1,5 +1,6 @@
 package com.inkwell.auth_service.security;
 
+import com.inkwell.auth_service.model.AuthProvider;
 import com.inkwell.auth_service.model.User;
 import com.inkwell.auth_service.repository.UserRepository;
 import com.inkwell.auth_service.service.JwtService;
@@ -44,7 +45,35 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
         if (user == null) {
             String email = readAttr(attributes, "email");
-            user = userRepository.findByEmail(email).orElse(null);
+            if (!email.isBlank()) {
+                user = userRepository.findByEmail(email).orElse(null);
+            }
+        }
+        if (user == null) {
+            String providerRaw = readAttr(attributes, "provider");
+            String providerUserId = readAttr(attributes, "providerUserId");
+            if (!providerRaw.isBlank() && !providerUserId.isBlank()) {
+                try {
+                    AuthProvider provider = AuthProvider.valueOf(providerRaw.toUpperCase());
+                    user = userRepository.findByProviderAndProviderUserId(provider, providerUserId).orElse(null);
+                } catch (IllegalArgumentException _ignored) {
+                    // Ignore invalid provider from OAuth attributes.
+                }
+            }
+        }
+        if (user == null) {
+            String principalName = oauth2User.getName();
+            if (principalName != null && !principalName.isBlank()) {
+                user = userRepository.findByEmail(principalName).orElseGet(() ->
+                        userRepository.findByUsername(principalName).orElse(null)
+                );
+            }
+        }
+        if (user == null) {
+            String login = readAttr(attributes, "login");
+            if (!login.isBlank()) {
+                user = userRepository.findByUsername(login).orElse(null);
+            }
         }
         if (user == null) {
             response.sendRedirect(frontendBaseUrl + "/login");

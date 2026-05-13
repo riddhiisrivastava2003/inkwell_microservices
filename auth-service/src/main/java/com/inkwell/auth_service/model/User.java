@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(name = "uk_user_email", columnNames = "email"),
-        @UniqueConstraint(name = "uk_user_username", columnNames = "username")
+        @UniqueConstraint(name = "uk_user_username", columnNames = "username"),
+        @UniqueConstraint(name = "uk_user_provider_provider_user_id", columnNames = {"provider", "provider_user_id"})
 })
 @Getter
 @Setter
@@ -38,6 +39,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AuthProvider provider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_user_id", length = 120)
+    private String providerUserId;
 
     @Column(length = 1000)
     private String bio;
