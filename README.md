@@ -374,4 +374,4 @@ Each service follows a standard Spring Boot project layout:
 
 ---
 
-
+> Built with ❤️ using Spring Boot Microservices

@@ -1,0 +1,24 @@
+@baseUrl = http://localhost:8084
+
+### Upload media (choose existing file path in your client)
+POST {{baseUrl}}/api/media/upload?uploaderId=1&altText=sample-image&linkedPostId=1
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="sample.png"
+Content-Type: image/png
+
+< ./sample.png
+--WebAppBoundary--
+
+### Get all media
+GET {{baseUrl}}/api/media
+
+### Link media to post
+POST {{baseUrl}}/api/media/1/link?postId=1
+
+### Update alt
+PUT {{baseUrl}}/api/media/1/alt?altText=updated-alt
+
+### Delete media
+DELETE {{baseUrl}}/api/media/1

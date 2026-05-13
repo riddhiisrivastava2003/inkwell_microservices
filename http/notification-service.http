@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:8086
+@jwt = REPLACE_WITH_ADMIN_JWT
+
+### Send notification
+POST {{baseUrl}}/api/notifications
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "recipientId": 1,
+  "actorId": 2,
+  "type": "NEW_COMMENT",
+  "title": "New comment",
+  "message": "Someone commented on your post",
+  "relatedId": 1,
+  "relatedType": "POST"
+}
+
+### Get recipient notifications
+GET {{baseUrl}}/api/notifications/recipient/1
+Authorization: Bearer {{jwt}}
+
+### Get unread count
+GET {{baseUrl}}/api/notifications/recipient/1/unread-count
+Authorization: Bearer {{jwt}}
+
+### Mark read
+PUT {{baseUrl}}/api/notifications/1/read
+Authorization: Bearer {{jwt}}
+
+### Mark all read
+PUT {{baseUrl}}/api/notifications/recipient/1/read-all
+Authorization: Bearer {{jwt}}
+
+### Delete read
+DELETE {{baseUrl}}/api/notifications/recipient/1/read
+Authorization: Bearer {{jwt}}
+
+### Broadcast by role (admin)
+POST {{baseUrl}}/api/notifications/broadcast/role
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "role": "AUTHOR",
+  "actorId": 1,
+  "type": "BROADCAST",
+  "title": "Policy Update",
+  "message": "Please follow new publishing policy."
+}
