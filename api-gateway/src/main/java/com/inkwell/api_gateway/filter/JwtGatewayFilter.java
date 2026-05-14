@@ -94,6 +94,9 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublic(HttpMethod method, String path) {
+        if (HttpMethod.OPTIONS.equals(method)) {
+            return true;
+        }
         if (PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith)) {
             return true;
         }
