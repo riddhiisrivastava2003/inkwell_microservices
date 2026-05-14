@@ -4,6 +4,7 @@ import com.inkwell.auth_service.security.JwtAuthenticationFilter;
 import com.inkwell.auth_service.security.OAuth2SuccessHandler;
 import com.inkwell.auth_service.service.OAuthUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,6 +26,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuthUserService oauthUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,https://*.vercel.app}")
+    private String allowedOriginPatterns;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -64,7 +67,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOriginPatterns(
+                List.of(allowedOriginPatterns.split("\\s*,\\s*"))
+        );
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
