@@ -12,7 +12,7 @@ import java.util.List;
 
 @Configuration
 public class GatewayCorsConfig {
-    @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,https://*.vercel.app}")
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,https://inkwell-frontend-gamma.vercel.app,https://*.vercel.app}")
     private String allowedOriginPatterns;
 
     @Bean
