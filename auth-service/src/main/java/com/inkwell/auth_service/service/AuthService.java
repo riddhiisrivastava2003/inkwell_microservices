@@ -48,10 +48,14 @@ public class AuthService {
     private String mailFrom;
 
     public AuthResponse register(RegisterRequest request) {
-        if (request.getRole() == UserRole.ADMIN) {
+        UserRole targetRole = request.getRole();
+        if (targetRole == null) {
+            targetRole = UserRole.READER;
+        }
+        if (targetRole == UserRole.ADMIN) {
             throw new BadRequestException("Use admin registration endpoint for admin account");
         }
-        return registerInternal(request, request.getRole() == null ? UserRole.READER : request.getRole());
+        return registerInternal(request, targetRole);
     }
 
     public AuthResponse registerAdmin(RegisterRequest request) {
