@@ -18,10 +18,22 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor //Constructor automatically banata hai for final fields
 public class SecurityConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Inkwell Auth Service API")
+                        .version("1.0")
+                        .description("Authentication and User Management Service"));
+    }
 
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
