@@ -35,6 +35,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable()) // Explicitly disable here as Gateway handles it
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/register",
@@ -48,14 +49,16 @@ public class SecurityConfig {
                                 "/api/auth/swagger-ui.html",
                                 "/api/auth/swagger-ui/**",
                                 "/api/auth/v3/api-docs/**",
+                                "/api/auth/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/api-docs",
                                 "/api-docs/**",
                                 "/v3/api-docs/**",
                                 "/oauth2/**",
-                                "/login/**"
+                                "/login/**",
+                                "/error"
                         ).permitAll()
+                        .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 
         http.oauth2Login(oauth -> oauth
