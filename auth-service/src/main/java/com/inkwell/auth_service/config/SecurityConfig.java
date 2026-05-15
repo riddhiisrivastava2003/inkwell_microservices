@@ -23,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor //Constructor automatically banata hai for final fields
 public class SecurityConfig {
 
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuthUserService oauthUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -32,8 +33,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
-                .cors(cors -> {
-                })
+                .cors(cors -> cors.disable()) // Explicitly disable here as Gateway handles it
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -61,21 +61,5 @@ public class SecurityConfig {
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
-    }
-
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(
-                List.of(allowedOriginPatterns.split("\\s*,\\s*"))
-        );
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }
